@@ -1,0 +1,19 @@
+{
+  "name": "tanuki-for-slack",
+  "version": "0.0.1",
+  "description": "GitLab Slack Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/johnathanmdell/tanuki-for-slack.git"
+  },
+  "author": "Johnathan Dell",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/johnathanmdell/tanuki-for-slack/issues"
+  },
+  "homepage": "https://github.com/johnathanmdell/tanuki-for-slack#readme"
+}
