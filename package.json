@@ -4,7 +4,7 @@
   "description": "GitLab Slack Bot",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon index.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,10 @@
   "bugs": {
     "url": "https://github.com/johnathanmdell/tanuki-for-slack/issues"
   },
-  "homepage": "https://github.com/johnathanmdell/tanuki-for-slack#readme"
+  "homepage": "https://github.com/johnathanmdell/tanuki-for-slack#readme",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^8.2.0",
+    "slackbots": "^1.2.0"
+  }
 }
