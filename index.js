@@ -26,7 +26,6 @@ tanuki.on("start", () => {
 });
 
 tanuki.on("message", data => {
-  console.log(data);
   // exclude non-message types and bot messages
   if (data.type !== "message" && data.subtype !== "bot_message") {
     return;
@@ -41,6 +40,7 @@ tanuki.on("message", data => {
   // only react to mentions of the bot user after initialisation
   if (data.text.startsWith("<@" + process.env.SLACK_BOT_USER_ID + ">")) {
     let params = data.text.split(" ");
+
     try {
       if (typeof params[2] === "string" && !hasAccess(params[2], data.user)) {
         throw new Error("Authorisation Error");
@@ -54,20 +54,7 @@ tanuki.on("message", data => {
 
       eval(params[1])(data);
     } catch (error) {
-      tanuki.postEphemeral(
-        data.channel,
-        data.user,
-        "No such luck - " +
-          error +
-          "\n" +
-          "\n" +
-          "`@Tanuki <command>`\n" +
-          "\n" +
-          "`hello`\n" +
-          "`job:last <project> <scope>`" +
-          "`job:retry <project> <job_id>`"
-      );
-
+      errorResponse(error, data);
       return;
     }
 
@@ -224,4 +211,22 @@ const statusColour = status => {
 
 const hasAccess = (project, slackUserId) => {
   return projects[project].users.includes(slackUserId);
+};
+
+const errorResponse = (error, data) => {
+  tanuki.postEphemeral(
+    data.channel,
+    data.user,
+    "No such luck - " +
+      error +
+      "\n" +
+      "\n" +
+      "`@Tanuki <command>`\n" +
+      "\n" +
+      "`hello`\n" +
+      "`job:last <project> <scope>`\n" +
+      "`job:retry <project> <job_id>`"
+  );
+
+  return;
 };
