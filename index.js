@@ -39,7 +39,7 @@ tanuki.on("message", data => {
 
   // only react to mentions of the bot user after initialisation
   if (data.text.startsWith("<@" + process.env.SLACK_BOT_USER_ID + ">")) {
-    let params = data.text.split(" ");
+    let params = data.text.split(/\s+\b/g);
 
     try {
       if (typeof params[2] === "string" && !hasAccess(params[2], data.user)) {
