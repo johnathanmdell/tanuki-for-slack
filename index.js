@@ -39,7 +39,7 @@ tanuki.on("message", data => {
 
   // only react to mentions of the bot user after initialisation
   if (data.text.startsWith("<@" + process.env.SLACK_BOT_USER_ID + ">")) {
-    let params = data.text.split(/\b(\w+)\b/g);
+    let params = data.text.split(" ");
 
     try {
       if (typeof params[2] === "string" && !hasAccess(params[2], data.user)) {
@@ -54,7 +54,7 @@ tanuki.on("message", data => {
 
       eval(params[1])(data);
     } catch (error) {
-      errorResponse(error, data);
+      handleError(error, data);
       return;
     }
 
@@ -96,70 +96,78 @@ const job_last = (data, params) => {
     endpoint = endpoint + "&scope[]=" + params[3];
   }
 
-  axios.get(endpoint).then(response => {
-    let lastJob = response.data[0];
-    let endpoint = buildUrl(
-      "/api/v4/projects/" +
-        projects[params[2]].id +
-        "/jobs/" +
-        lastJob.id +
-        "/trace"
-    );
+  axios
+    .get(endpoint)
+    .then(response => {
+      let lastJob = response.data[0];
+      let endpoint = buildUrl(
+        "/api/v4/projects/" +
+          projects[params[2]].id +
+          "/jobs/" +
+          lastJob.id +
+          "/trace"
+      );
 
-    axios.get(endpoint).then(response => {
-      let logParts = decodeURIComponent(response.data)
-        .split("\n")
-        .splice(-5);
+      axios.get(endpoint).then(response => {
+        let logParts = decodeURIComponent(response.data)
+          .split("\n")
+          .splice(-5);
 
-      tanuki.postMessageToChannel(projects[params[2]].channel, "", {
-        mrkdwn: true,
-        attachments: [
-          {
-            color: statusColour(lastJob.status),
-            title: "Job - " + lastJob.id,
-            title_link: lastJob.web_url,
-            mrkdwn_in: ["fields", "text"],
-            fields: [
-              {
-                title: "Name",
-                value: lastJob.name,
-                short: true
-              },
-              {
-                title: "Stage",
-                value: lastJob.stage,
-                short: true
-              },
-              {
-                title: "Duration",
-                value: Math.round(lastJob.duration) + "s",
-                short: true
-              },
-              {
-                title: "Status",
-                value: lastJob.status,
-                short: true
-              },
-              {
-                title: "Last Commit",
-                value:
-                  "#" + lastJob.commit.short_id + " - " + lastJob.commit.title,
-                short: false
-              },
-              {
-                value: "```" + logParts.join("\n") + "```",
-                short: false
-              }
-            ],
-            footer: "GitLab API",
-            footer_icon:
-              "https://about.gitlab.com/images/press/logo/png/gitlab-icon-rgb.png",
-            ts: new Date(lastJob.created_at).getTime() / 1000
-          }
-        ]
+        tanuki.postMessageToChannel(projects[params[2]].channel, "", {
+          mrkdwn: true,
+          attachments: [
+            {
+              color: statusColour(lastJob.status),
+              title: "Job - " + lastJob.id,
+              title_link: lastJob.web_url,
+              mrkdwn_in: ["fields", "text"],
+              fields: [
+                {
+                  title: "Name",
+                  value: lastJob.name,
+                  short: true
+                },
+                {
+                  title: "Stage",
+                  value: lastJob.stage,
+                  short: true
+                },
+                {
+                  title: "Duration",
+                  value: Math.round(lastJob.duration) + "s",
+                  short: true
+                },
+                {
+                  title: "Status",
+                  value: lastJob.status,
+                  short: true
+                },
+                {
+                  title: "Last Commit",
+                  value:
+                    "#" +
+                    lastJob.commit.short_id +
+                    " - " +
+                    lastJob.commit.title,
+                  short: false
+                },
+                {
+                  value: "```" + logParts.join("\n") + "```",
+                  short: false
+                }
+              ],
+              footer: "GitLab API",
+              footer_icon:
+                "https://about.gitlab.com/images/press/logo/png/gitlab-icon-rgb.png",
+              ts: new Date(lastJob.created_at).getTime() / 1000
+            }
+          ]
+        });
       });
+    })
+    .catch(function(error) {
+      handleError(error, data);
     });
-  });
 };
 
 const job_retry = (data, params) => {
@@ -171,43 +179,48 @@ const job_retry = (data, params) => {
       "/retry"
   );
 
-  axios.post(endpoint).then(response => {
-    tanuki.postEphemeral(data.channel, data.user, "", {
-      mrkdwn: true,
-      attachments: [
-        {
-          color: statusColour("success"),
-          title: "Job - " + response.data.id,
-          title_link: response.data.web_url,
-          fields: [
-            {
-              title: "Name",
-              value: response.data.name,
-              short: true
-            },
-            {
-              title: "Status",
-              value: response.data.status,
-              short: true
-            },
-            {
-              title: "Last Commit",
-              value:
-                "#" +
-                response.data.commit.short_id +
-                " - " +
-                response.data.commit.title,
-              short: false
-            }
-          ],
-          footer: "GitLab API",
-          footer_icon:
-            "https://about.gitlab.com/images/press/logo/png/gitlab-icon-rgb.png",
-          ts: new Date(response.data.created_at).getTime() / 1000
-        }
-      ]
+  axios
+    .post(endpoint)
+    .then(response => {
+      tanuki.postEphemeral(data.channel, data.user, "", {
+        mrkdwn: true,
+        attachments: [
+          {
+            color: statusColour("success"),
+            title: "Job - " + response.data.id,
+            title_link: response.data.web_url,
+            fields: [
+              {
+                title: "Name",
+                value: response.data.name,
+                short: true
+              },
+              {
+                title: "Status",
+                value: response.data.status,
+                short: true
+              },
+              {
+                title: "Last Commit",
+                value:
+                  "#" +
+                  response.data.commit.short_id +
+                  " - " +
+                  response.data.commit.title,
+                short: false
+              }
+            ],
+            footer: "GitLab API",
+            footer_icon:
+              "https://about.gitlab.com/images/press/logo/png/gitlab-icon-rgb.png",
+            ts: new Date(response.data.created_at).getTime() / 1000
+          }
+        ]
+      });
+    })
+    .catch(function(error) {
+      handleError(error, data);
     });
-  });
 };
 
 const buildUrl = endpoint => {
@@ -233,7 +246,7 @@ const hasAccess = (project, slackUserId) => {
   return projects[project].users.includes(slackUserId);
 };
 
-const errorResponse = (error, data) => {
+const handleError = (error, data) => {
   tanuki.postEphemeral(
     data.channel,
     data.user,
