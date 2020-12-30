@@ -1,9 +1,8 @@
 {
   "project-name": {
-    "id": "project-name",
-    "channel": "default-slack-channel",
-    "users": [
-      "slack-user-id"
-    ]
+    "id": "",
+    "channel": "",
+    "users": [],
+    "ref": ""
   }
 }

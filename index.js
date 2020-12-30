@@ -46,13 +46,7 @@ tanuki.on("message", data => {
         throw new Error("Authorisation Error");
       }
 
-      if (params[1].includes(":")) {
-        parts = params[1].split(":");
-        eval(parts[0] + "_" + parts[1])(data, params);
-        return;
-      }
-
-      eval(params[1])(data);
+      eval(params[1].replace(/-/g, "_"))(data, params);
     } catch (error) {
       handleError(error, data);
       return;
@@ -83,7 +77,7 @@ const initialise = data => {
   }
 };
 
-const hello = data => {
+const hello = (data, params) => {
   tanuki.postEphemeral(data.channel, data.user, "Hey there");
 };
 
@@ -109,7 +103,11 @@ const job_last = (data, params) => {
       );
 
       axios.get(endpoint).then(response => {
-        let logParts = decodeURIComponent(response.data)
+        let logParts = response.data
+          .replace(
+            /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+            ""
+          )
           .split("\n")
           .splice(-5);
 
@@ -223,6 +221,51 @@ const job_retry = (data, params) => {
     });
 };
 
+const pipeline_create = (data, params) => {
+  let endpoint = buildUrl(
+    "/api/v4/projects/" + projects[params[2]].id + "/pipeline"
+  );
+
+  endpoint =
+    typeof params[3] == "string"
+      ? endpoint + "&ref=" + params[3]
+      : endpoint + "&ref=" + projects[params[2]].ref;
+
+  axios
+    .post(endpoint)
+    .then(response => {
+      tanuki.postEphemeral(data.channel, data.user, "", {
+        mrkdwn: true,
+        attachments: [
+          {
+            color: statusColour(response.data.status),
+            title: "Pipeline - " + response.data.id,
+            title_link: response.data.web_url,
+            fields: [
+              {
+                title: "Ref",
+                value: response.data.ref,
+                short: true
+              },
+              {
+                title: "Status",
+                value: response.data.status,
+                short: true
+              }
+            ],
+            footer: "GitLab API",
+            footer_icon:
+              "https://about.gitlab.com/images/press/logo/png/gitlab-icon-rgb.png",
+            ts: new Date(response.data.created_at).getTime() / 1000
+          }
+        ]
+      });
+    })
+    .catch(function(error) {
+      handleError(error, data);
+    });
+};
+
 const buildUrl = endpoint => {
   return (
     process.env.GITLAB_URL +
@@ -239,7 +282,7 @@ const statusColour = status => {
     canceled: "#ecb22e"
   };
 
-  return colours[status] != undefined ? colours[status] : "#36C5F0";
+  return colours[status] != undefined ? colours[status] : "#36c5f0";
 };
 
 const hasAccess = (project, slackUserId) => {
@@ -257,8 +300,9 @@ const handleError = (error, data) => {
       "`@Tanuki <command>`\n" +
       "\n" +
       "`hello`\n" +
-      "`job:last <project> <scope>`\n" +
-      "`job:retry <project> <job_id>`"
+      "`job-last <project> <status>`\n" +
+      "`job-retry <project> <job>`\n" +
+      "`pipeline-create <project> <ref>`"
   );
 
   return;
