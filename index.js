@@ -57,7 +57,7 @@ tanuki.on("message", data => {
 });
 
 const initialise = data => {
-  // try and match a user id from the message text
+  // try and match a user id from the message
   let userMatch = data.text.match(/^<@.*?>/g);
 
   if (typeof userMatch != undefined) {
